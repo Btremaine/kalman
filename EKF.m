@@ -132,7 +132,7 @@ D= zeros(4,1);   % Dk not used in this model
 %    initialize starting point
   x_hat(:,1)= x0;
   yp(:,1)=yp(:,2); % get rid of (0,0)
-  Pupd= 0.0025*eye(n);
+  Pupd= diag([0.06, 0.20, 200, 2.0]);
 % end
 for k= 2:Np
     x1= yp(1,k-1);
@@ -151,26 +151,21 @@ for k= 2:Np
     %
     % predicted i.e. model time update    
     x_bar(:,k) = Fk*x_hat(:,k-1);    % no control, Stengel 4.3-12 time update
-
     Ppre= Fk*Pupd*Fk' + Qk;          % P_k|k-1  Stengel 4.3-13 time update
 
     % measurement update
     Sk = Hk*Ppre*Hk' + Rk;
-    Kk = Ppre*Hk'*(eye(size(Sk))\Sk);            % Stengel 4.3-14 observation update
-
+    Kk = Ppre*Hk'*(eye(size(Sk))*inv(Sk));       % Stengel 4.3-14 observation update
     hk = Observation(x_bar(1,k), x_bar(3,k));    % returns (range, theta) 
     x_hat(:,k) = x_bar(:,k) + Kk*(yp(:,k) - hk); % Stengal 4.3-15
-
     Pupd =  (eye(size(Kk,1)) - Kk*Hk)*Ppre; % Stengel 4.3-16 Cov estimate update
-   
+    % +++++++++++++ end Extended Kalman Flter ++++++++++++++++++++++++
+    % save for plotting
     hk = Observation(x_hat(1,k), x_hat(3,k));
     y_hat(:,k) = hk;        % no direct feed-through
-
+    L1(:,k) = Kk(:,1);
+    L2(:,k) = Kk(:,2);
     %
-    L1(:,k) = Kk(:,1);  % save for plotting : 
-    L2(:,k) = Kk(:,2);  % save for plotting :
-    % +++++++++++++ end Extended Kalman Flter ++++++++++++++++++++++++
-    %%
 end
 %% plot results
 xp= xrn; % plant states for plotting
